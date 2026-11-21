@@ -34,10 +34,10 @@ A responsive web-based Task Management System built with **React.js** and **Tail
 ## Screenshots
 
 ### Mobile View
-*(Add mobile screenshot here)*
+![Mobile View](./mobile-view.png)
 
 ### Desktop View
-*(Add desktop screenshot here)*
+![Desktop View](./desktop-view.png)
 
 ---
 
