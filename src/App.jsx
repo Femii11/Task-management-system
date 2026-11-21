@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function App() {
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState(() => {
+    const savedTasks = localStorage.getItem('tasks');
+    return savedTasks ? JSON.parse(savedTasks) : [];
+  });
   const [title, setTitle] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All');
+
+  useEffect(() => {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }, [tasks]);
 
   const handleAddTask = (e) => {
     e.preventDefault();
@@ -47,13 +56,35 @@ export default function App() {
     setEditingId(null);
   };
 
+  const filteredTasks = tasks.filter((task) => {
+    const matchesStatus =
+      filterStatus === 'All' || task.status === filterStatus;
+    const matchesSearch = task.title
+      .toLowerCase()
+      .includes(search.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  const completedCount = tasks.filter((t) => t.status === 'Completed').length;
+
   return (
     <div className="min-h-screen bg-slate-900 text-white p-4">
       <div className="max-w-xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 text-center">Task Manager</h1>
+        <h1 className="text-2xl font-bold mb-2 text-center">Task Manager</h1>
+
+        {/* Task Progress Monitor */}
+        <p className="text-center text-sm text-slate-400 mb-6">
+          Total: <span className="text-white font-semibold">{tasks.length}</span>{' '}
+          | Completed:{' '}
+          <span className="text-emerald-400 font-semibold">{completedCount}</span>{' '}
+          | Remaining:{' '}
+          <span className="text-amber-400 font-semibold">
+            {tasks.length - completedCount}
+          </span>
+        </p>
 
         {/* Add Task Form */}
-        <form onSubmit={handleAddTask} className="flex gap-2 mb-6">
+        <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
           <input
             type="text"
             placeholder="Enter a new task..."
@@ -69,12 +100,40 @@ export default function App() {
           </button>
         </form>
 
-        {/* Task List */}
+        {/* Search Input */}
+        <input
+          type="text"
+          placeholder="Search tasks..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full p-3 mb-3 rounded bg-slate-800 border border-slate-700 text-sm focus:outline-none focus:border-blue-500"
+        />
+
+        {/* Status Filter Tabs */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {['All', 'Pending', 'In Progress', 'Completed'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition ${
+                filterStatus === status
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+
+        {/* Filtered Task List */}
         {tasks.length === 0 ? (
           <p className="text-center text-slate-400">No tasks yet. Add one above!</p>
+        ) : filteredTasks.length === 0 ? (
+          <p className="text-center text-slate-400">No matching tasks found.</p>
         ) : (
           <div className="space-y-3">
-            {tasks.map((task) => (
+            {filteredTasks.map((task) => (
               <div
                 key={task.id}
                 className="bg-slate-800 p-4 rounded border border-slate-700"
@@ -123,7 +182,7 @@ export default function App() {
                         <option value="Pending">Pending</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
-                      </select>
+                      </button>
 
                       <button
                         onClick={() => startEdit(task)}
