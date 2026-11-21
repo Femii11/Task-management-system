@@ -72,7 +72,6 @@ export default function App() {
       <div className="max-w-xl mx-auto">
         <h1 className="text-2xl font-bold mb-2 text-center">Task Manager</h1>
 
-        {/* Task Progress Monitor */}
         <p className="text-center text-sm text-slate-400 mb-6">
           Total: <span className="text-white font-semibold">{tasks.length}</span>{' '}
           | Completed:{' '}
@@ -83,7 +82,6 @@ export default function App() {
           </span>
         </p>
 
-        {/* Add Task Form */}
         <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
           <input
             type="text"
@@ -100,7 +98,6 @@ export default function App() {
           </button>
         </form>
 
-        {/* Search Input */}
         <input
           type="text"
           placeholder="Search tasks..."
@@ -109,7 +106,6 @@ export default function App() {
           className="w-full p-3 mb-3 rounded bg-slate-800 border border-slate-700 text-sm focus:outline-none focus:border-blue-500"
         />
 
-        {/* Status Filter Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
           {['All', 'Pending', 'In Progress', 'Completed'].map((status) => (
             <button
@@ -126,7 +122,6 @@ export default function App() {
           ))}
         </div>
 
-        {/* Filtered Task List */}
         {tasks.length === 0 ? (
           <p className="text-center text-slate-400">No tasks yet. Add one above!</p>
         ) : filteredTasks.length === 0 ? (
@@ -182,7 +177,7 @@ export default function App() {
                         <option value="Pending">Pending</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
-                      </button>
+                      </select>
 
                       <button
                         onClick={() => startEdit(task)}
