@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export default function App() {
-  // --- AUTHENTICATION STATE (localStorage) ---
+  // --- AUTHENTICATION
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('tm_currentUser');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -12,7 +12,7 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // --- TASK MANAGER STATE ---
+  //TASK MANAGER STATE
   const [tasks, setTasks] = useState(() => {
     const savedTasks = localStorage.getItem('tasks');
     return savedTasks ? JSON.parse(savedTasks) : [];
@@ -25,7 +25,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
 
-  // Sync tasks to localStorage whenever tasks change
+
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
   }, [tasks]);
@@ -77,7 +77,7 @@ export default function App() {
     setCurrentUser(null);
   };
 
-  // --- TASK CRUD HANDLERS ---
+  // TASK CRUD HANDLERS
   const handleAddTask = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -165,7 +165,7 @@ export default function App() {
     return 'bg-amber-100 text-amber-700 border-amber-200';
   };
 
-  // --- LOGIN / SIGN UP SCREEN ---
+  //LOGIN / SIGN UP SCREEN
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -253,7 +253,7 @@ export default function App() {
     );
   }
 
-  // --- DERIVED FILTER & COUNTS ---
+  //DERIVED FILTER & COUNTS
   const filteredTasks = tasks.filter((task) => {
     const matchesStatus =
       filterStatus === 'All' || task.status === filterStatus;
@@ -265,7 +265,7 @@ export default function App() {
 
   const completedCount = tasks.filter((t) => t.status === 'Completed').length;
 
-  // --- MAIN DASHBOARD VIEW ---
+  //MAIN DASHBOARD VIEW
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
       {/* Top Navbar */}
@@ -528,4 +528,4 @@ export default function App() {
     </div>
   );
 }
-    
+ 
