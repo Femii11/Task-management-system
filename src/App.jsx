@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export default function App() {
-  // --- AUTHENTICATION
+  // AUTHENTICATION
   const [currentUser, setCurrentUser] = useState(() => {
     const savedUser = localStorage.getItem('tm_currentUser');
     return savedUser ? JSON.parse(savedUser) : null;
@@ -12,15 +12,17 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
-  //TASK MANAGER STATE
+  // TASK MANAGER
   const [tasks, setTasks] = useState(() => {
     const savedTasks = localStorage.getItem('tasks');
     return savedTasks ? JSON.parse(savedTasks) : [];
   });
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [editExpiresAt, setEditExpiresAt] = useState('');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
@@ -30,7 +32,7 @@ export default function App() {
     localStorage.setItem('tasks', JSON.stringify(tasks));
   }, [tasks]);
 
-  // --- AUTH HANDLERS ---
+  // AUTH HANDLER
   const handleAuthSubmit = (e) => {
     e.preventDefault();
     setAuthError('');
@@ -77,7 +79,7 @@ export default function App() {
     setCurrentUser(null);
   };
 
-  // TASK CRUD HANDLERS
+  //TASK CRUD HANDLER
   const handleAddTask = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -85,6 +87,7 @@ export default function App() {
     const newTask = {
       id: Date.now(),
       title: title.trim(),
+      description: description.trim(),
       status: 'Pending',
       createdAt: new Date().toISOString(),
       expiresAt: expiresAt || '',
@@ -92,6 +95,7 @@ export default function App() {
 
     setTasks([newTask, ...tasks]);
     setTitle('');
+    setDescription('');
     setExpiresAt('');
   };
 
@@ -100,7 +104,8 @@ export default function App() {
   };
 
   const updateStatus = (id, newStatus) => {
-    if (newStatus === 'Completed' && editingId === id) {
+    // Cancel active edit if task moves out of Pending (In Progress or Completed)
+    if (newStatus !== 'Pending' && editingId === id) {
       setEditingId(null);
     }
     setTasks(
@@ -111,9 +116,11 @@ export default function App() {
   };
 
   const startEdit = (task) => {
-    if (task.status === 'Completed') return;
+    // Only Pending tasks can be edited
+    if (task.status !== 'Pending') return;
     setEditingId(task.id);
     setEditText(task.title);
+    setEditDescription(task.description || '');
     setEditExpiresAt(task.expiresAt || '');
   };
 
@@ -122,14 +129,18 @@ export default function App() {
     setTasks(
       tasks.map((task) =>
         task.id === id
-          ? { ...task, title: editText.trim(), expiresAt: editExpiresAt }
+          ? {
+              ...task,
+              title: editText.trim(),
+              description: editDescription.trim(),
+              expiresAt: editExpiresAt,
+            }
           : task
       )
     );
     setEditingId(null);
   };
 
-  // Format ISO date strings into readable local date & time
   const formatDateTime = (dateValue) => {
     if (!dateValue) return 'No expiry';
     const date = new Date(dateValue);
@@ -156,7 +167,13 @@ export default function App() {
     return 'font-medium text-slate-800';
   };
 
-  // Soft pill badge styling matching the reference table
+  const getDescriptionTextStyle = (status) => {
+    if (status === 'Completed') return 'line-through text-slate-300';
+    if (status === 'In Progress') return 'italic text-blue-500/80';
+    return 'text-slate-500';
+  };
+
+ 
   const getStatusBadgeStyle = (status) => {
     if (status === 'Completed')
       return 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -165,7 +182,7 @@ export default function App() {
     return 'bg-amber-100 text-amber-700 border-amber-200';
   };
 
-  //LOGIN / SIGN UP SCREEN
+  //LOGIN / SIGN UP PAGE
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -253,19 +270,20 @@ export default function App() {
     );
   }
 
-  //DERIVED FILTER & COUNTS
+  // DERIVED FILTER & COUNTS
   const filteredTasks = tasks.filter((task) => {
     const matchesStatus =
       filterStatus === 'All' || task.status === filterStatus;
-    const matchesSearch = task.title
-      .toLowerCase()
-      .includes(search.toLowerCase());
+    const query = search.toLowerCase();
+    const matchesSearch =
+      task.title.toLowerCase().includes(query) ||
+      (task.description && task.description.toLowerCase().includes(query));
     return matchesStatus && matchesSearch;
   });
 
   const completedCount = tasks.filter((t) => t.status === 'Completed').length;
 
-  //MAIN DASHBOARD VIEW
+  // MAIN DASHBOARD PAGE
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
       {/* Top Navbar */}
@@ -283,46 +301,57 @@ export default function App() {
           </button>
         </div>
       </header>
-
-      <main className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
+<main className="max-w-6xl mx-auto p-4 sm:p-8 space-y-6">
         {/* Add New Task Form */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-5">
-          <form
-            onSubmit={handleAddTask}
-            className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end"
-          >
-            <div className="sm:col-span-6">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
-                Task Title
-              </label>
-              <input
-                type="text"
-                placeholder="Enter a new task..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:border-blue-600"
-              />
+          <form onSubmit={handleAddTask} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+              <div className="sm:col-span-6">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                  Task Title
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter a new task..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:border-blue-600"
+                />
+              </div>
+
+              <div className="sm:col-span-4">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                  Expiration Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={expiresAt}
+                  onChange={(e) => setExpiresAt(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-700 bg-white focus:outline-none focus:border-blue-600"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <button
+                  type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition"
+                >
+                  + New Task
+                </button>
+              </div>
             </div>
 
-            <div className="sm:col-span-4">
+            <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
-                Expiration Time
+                Task Description
               </label>
-              <input
-                type="datetime-local"
-                value={expiresAt}
-                onChange={(e) => setExpiresAt(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-700 bg-white focus:outline-none focus:border-blue-600"
+              <textarea
+                rows="2"
+                placeholder="Write a brief description of what this task involves..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:border-blue-600"
               />
-            </div>
-
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition"
-              >
-                + New Task
-              </button>
             </div>
           </form>
         </div>
@@ -341,7 +370,7 @@ export default function App() {
 
             <input
               type="text"
-              placeholder="Search tasks..."
+              placeholder="Search title or description..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full sm:w-64 px-3.5 py-2 rounded-lg border border-slate-300 text-sm text-slate-800 focus:outline-none focus:border-blue-600"
@@ -380,7 +409,7 @@ export default function App() {
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                     <th className="py-3.5 px-4 sm:px-6">#</th>
-                    <th className="py-3.5 px-4">Task</th>
+                    <th className="py-3.5 px-4">Task & Description</th>
                     <th className="py-3.5 px-4">Added At</th>
                     <th className="py-3.5 px-4">Expires At</th>
                     <th className="py-3.5 px-4">Status</th>
@@ -390,30 +419,52 @@ export default function App() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {filteredTasks.map((task, index) => {
-                    const isCompleted = task.status === 'Completed';
+                    const canEdit = task.status === 'Pending';
                     const expired = isTaskExpired(task);
 
                     return (
                       <tr
                         key={task.id}
-                        className="hover:bg-slate-50/80 transition"
+                        className="hover:bg-slate-50/80 transition align-top"
                       >
                         <td className="py-3.5 px-4 sm:px-6 text-slate-400 font-medium">
                           {index + 1}
                         </td>
 
-                        <td className="py-3.5 px-4 min-w-[170px]">
+                        <td className="py-3.5 px-4 min-w-[220px] max-w-xs">
                           {editingId === task.id ? (
-                            <input
-                              type="text"
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              className="w-full px-2.5 py-1.5 rounded border border-blue-500 text-sm text-slate-800 focus:outline-none"
-                            />
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                className="w-full px-2.5 py-1.5 rounded border border-blue-500 text-sm text-slate-800 focus:outline-none"
+                              />
+                              <textarea
+                                rows="2"
+                                placeholder="Task description..."
+                                value={editDescription}
+                                onChange={(e) =>
+                                  setEditDescription(e.target.value)
+                                }
+                                className="w-full px-2.5 py-1.5 rounded border border-blue-500 text-xs text-slate-700 focus:outline-none"
+                              />
+                            </div>
                           ) : (
-                            <span className={getTaskTextStyle(task.status)}>
-                              {task.title}
-                            </span>
+                            <div>
+                              <p className={getTaskTextStyle(task.status)}>
+                                {task.title}
+                              </p>
+                              {task.description && (
+                                <p
+                                  className={`text-xs mt-1 leading-relaxed ${getDescriptionTextStyle(
+                                    task.status
+                                  )}`}
+                                >
+                                  {task.description}
+                                </p>
+                              )}
+                            </div>
                           )}
                         </td>
 
@@ -493,14 +544,14 @@ export default function App() {
                             <div className="inline-flex gap-2">
                               <button
                                 onClick={() => startEdit(task)}
-                                disabled={isCompleted}
+                                disabled={!canEdit}
                                 title={
-                                  isCompleted
-                                    ? 'Completed tasks cannot be edited'
-: 'Edit task'
+                                  !canEdit
+                                    ? 'Only Pending tasks can be edited'
+                                    : 'Edit task'
                                 }
                                 className={`px-2.5 py-1 rounded text-xs font-semibold transition ${
-                                  isCompleted
+                                  !canEdit
                                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                     : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
                                 }`}
@@ -528,4 +579,3 @@ export default function App() {
     </div>
   );
 }
- 
